@@ -1,10 +1,12 @@
 import { environment } from "@raycast/api";
-import { Category, ReactIcon } from "./types";
-import fetch from "node-fetch";
+import { Category, ReactIconType } from "./types";
 import fs from "fs";
 
+export const isMac = process.platform === "darwin";
+export const isWindows = process.platform === "win32";
+
 export const categories: Category[] = JSON.parse(
-  fs.readFileSync(`${environment.assetsPath}/categories.json`, { encoding: "utf-8" })
+  fs.readFileSync(`${environment.assetsPath}/categories.json`, { encoding: "utf-8" }),
 );
 
 export const loadCategoryIcons = (category: string): Category => {
@@ -25,10 +27,10 @@ export const formatCategoryTitle = (title: string): string => {
   return title.includes("Icons") ? title : `${title} Icons`;
 };
 
-export const searchIcons = (searchText: string): ReactIcon[] => {
+export const searchIcons = (searchText: string): ReactIconType[] => {
   if (searchText.length >= 2) {
     searchText = searchText.replaceAll(" ", "").toLowerCase();
-    const results: ReactIcon[] = [];
+    const results: ReactIconType[] = [];
     categories.forEach((category) => {
       category = loadCategoryIcons(category.title);
       const id = category.id;

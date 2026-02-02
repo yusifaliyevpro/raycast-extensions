@@ -4,18 +4,12 @@ export type Category = {
   icons: string[];
 };
 
-export type ReactIcon = {
+export type ReactIconType = {
   icon: string;
   category: {
     id: string;
     title: string;
   };
-};
-
-export type Preferences = {
-  action: "Copy" | "Paste";
-  size: "8" | "6" | "5";
-  downloadDirectory: string;
 };
 
 export type PinnedMovement = {

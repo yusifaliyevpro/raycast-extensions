@@ -9,21 +9,23 @@ import {
   Toast,
   showToast,
   showHUD,
-  getPreferenceValues,
   open,
   showInFinder,
   closeMainWindow,
+  Detail,
+  openExtensionPreferences,
+  getPreferenceValues,
 } from "@raycast/api";
-import { IconStorageActions, getPinnedIcons, getRecentIcons, getPinnedMovement, addRecentIcon } from "./storage";
-import { categories, loadCategoryIcons, getPath, getSVG, formatCategoryTitle, searchIcons } from "./utils";
-import { Category, IconProps, Preferences, ReactIcon } from "./types";
-import { writeFileSync } from "fs";
+import { IconStorageActions, getPinnedIcons, getRecentIcons, getPinnedMovement, addRecentIcon } from "./lib/storage";
+import { categories, loadCategoryIcons, getPath, getSVG, formatCategoryTitle, searchIcons } from "./lib/utils";
+import { Category, IconProps, ReactIconType } from "./lib/types";
+import { existsSync, writeFileSync } from "fs";
 
-const { action, size, downloadDirectory }: Preferences = getPreferenceValues();
+const { downloadDirectory, action, size } = getPreferenceValues<Preferences>();
 
 export default function Command() {
   const [searchText, setSearchText] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<ReactIcon[]>([]);
+  const [searchResults, setSearchResults] = useState<ReactIconType[]>([]);
 
   const [gridDropdown, setGridDropdown] = useState<string>();
   const [category, setCategory] = useState<Category>();
@@ -48,6 +50,21 @@ export default function Command() {
       }
     }
   }, [refresh, gridDropdown, searchText]);
+
+  if (!existsSync(downloadDirectory)) {
+    const markdown = "Download directory is incorrect. Please update it in extension preferences and try again.";
+
+    return (
+      <Detail
+        markdown={markdown}
+        actions={
+          <ActionPanel>
+            <Action title="Open Extension Preferences" onAction={openExtensionPreferences} />
+          </ActionPanel>
+        }
+      />
+    );
+  }
 
   return (
     <Grid
@@ -79,8 +96,8 @@ export default function Command() {
             searchResults.length === 0 ? (
               <Grid.EmptyView title={"Search for All React Icons"} icon={{ source: "../assets/react-icons.svg" }} />
             ) : (
-              searchResults.map((reactIcon: ReactIcon, index: number) => (
-                <ReactIcon
+              searchResults.map((reactIcon: ReactIconType, index: number) => (
+                <ReactIconItem
                   key={index}
                   icon={reactIcon.icon}
                   category={{ id: reactIcon.category.id, title: reactIcon.category.title, icons: [] }}
@@ -92,7 +109,7 @@ export default function Command() {
             <React.Fragment>
               <Grid.Section title={"Pinned Icons"}>
                 {pinnedIcons.map((icon: string) => (
-                  <ReactIcon
+                  <ReactIconItem
                     key={icon}
                     icon={icon}
                     category={category}
@@ -104,14 +121,14 @@ export default function Command() {
               </Grid.Section>
               <Grid.Section title={"Recent Icons"}>
                 {recentIcons.map((icon: string) => (
-                  <ReactIcon key={icon} icon={icon} category={category} refresh={refreshIcons} recent={true} />
+                  <ReactIconItem key={icon} icon={icon} category={category} refresh={refreshIcons} recent={true} />
                 ))}
               </Grid.Section>
               <Grid.Section title={`${formatCategoryTitle(category.title)} (${category.icons.length})`}>
                 {category.icons
                   .filter((i) => !pinnedIcons.includes(i) && !recentIcons.includes(i))
                   .map((icon: string) => (
-                    <ReactIcon key={icon} icon={icon} category={category} refresh={refreshIcons} />
+                    <ReactIconItem key={icon} icon={icon} category={category} refresh={refreshIcons} />
                   ))}
               </Grid.Section>
             </React.Fragment>
@@ -122,7 +139,7 @@ export default function Command() {
   );
 }
 
-const ReactIcon = (props: IconProps) => {
+const ReactIconItem = (props: IconProps) => {
   const { icon, category, refresh } = props;
   const id = `${category.id}-${icon}}`;
   const path = getPath(icon, category.title);
@@ -170,7 +187,10 @@ const ReactIcon = (props: IconProps) => {
     <Grid.Item
       id={id}
       title={icon}
-      content={{ value: { source: path, tintColor: Color.PrimaryText }, tooltip: icon }}
+      content={{
+        value: { source: path, fallback: "react-icons.svg", tintColor: Color.PrimaryText },
+        tooltip: icon,
+      }}
       actions={
         <ActionPanel title={icon}>
           <Action title={`${action} Name`} icon={Icon.Clipboard} onAction={() => onAction(icon)} />
@@ -178,13 +198,19 @@ const ReactIcon = (props: IconProps) => {
           <Action
             title={`${action} Import Statement`}
             icon={Icon.Code}
-            shortcut={{ modifiers: ["cmd", "shift"], key: "enter" }}
+            shortcut={{
+              macOS: { modifiers: ["cmd", "shift"], key: "enter" },
+              Windows: { modifiers: ["ctrl", "shift"], key: "enter" },
+            }}
             onAction={() => onAction(`import { ${icon} } from "${category.id}";`)}
           />
           <ActionPanel.Section>
             <Action
               title={"Copy SVG of Icon"}
-              shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+              shortcut={{
+                macOS: { modifiers: ["cmd", "shift"], key: "c" },
+                Windows: { modifiers: ["ctrl", "shift"], key: "c" },
+              }}
               icon={Icon.CodeBlock}
               onAction={async () => {
                 Clipboard.copy(await getSVG(path));
@@ -195,7 +221,10 @@ const ReactIcon = (props: IconProps) => {
             />
             <Action
               title={"Download SVG Icon"}
-              shortcut={{ modifiers: ["cmd", "shift"], key: "d" }}
+              shortcut={{
+                macOS: { modifiers: ["cmd", "shift"], key: "d" },
+                Windows: { modifiers: ["ctrl", "shift"], key: "d" },
+              }}
               icon={Icon.Download}
               onAction={onDownload}
             />

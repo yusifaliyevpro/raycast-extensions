@@ -3,13 +3,16 @@
   "name": "react-icons",
   "title": "React Icons",
   "description": "Browse and search react icons.",
-  "icon": "command-icon.png",
+  "icon": "extension_icon.png",
   "author": "yug2005",
   "categories": [
     "Design Tools",
     "Productivity"
   ],
   "license": "MIT",
+  "contributors": [
+    "yusifaliyevpro"
+  ],
   "commands": [
     {
       "name": "index",
@@ -69,19 +72,16 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.45.2",
-    "htmlparser": "^1.7.7",
-    "node-fetch": "^3.3.0"
+    "@raycast/api": "^1.104.3",
+    "@raycast/eslint-config": "^2.1.1",
+    "@raycast/utils": "^2.2.2"
   },
   "devDependencies": {
-    "@types/node": "18.8.3",
-    "@types/react": "18.0.9",
-    "@typescript-eslint/eslint-plugin": "^5.0.0",
-    "@typescript-eslint/parser": "^5.0.0",
-    "eslint": "^7.32.0",
-    "eslint-config-prettier": "^8.3.0",
-    "prettier": "^2.5.1",
-    "typescript": "^4.4.3"
+    "@types/node": "^22.19.7",
+    "@types/react": "^19.2.10",
+    "eslint": "^9.39.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.8.2"
   },
   "scripts": {
     "build": "ray build -e dist",
@@ -89,5 +89,9 @@
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
     "publish": "ray publish"
-  }
+  },
+  "platforms": [
+    "macOS",
+    "Windows"
+  ]
 }
