@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   ActionPanel,
   Action,
@@ -23,9 +23,14 @@ import { existsSync, writeFileSync } from "fs";
 
 const { downloadDirectory, action, size } = getPreferenceValues<Preferences>();
 
+const MAX_SEARCH_RESULTS = 100; // Limit results to prevent overwhelming the Grid
+const SEARCH_DEBOUNCE_MS = 500; // Debounce search to avoid excessive requests
+
 export default function Command() {
   const [searchText, setSearchText] = useState<string>("");
+  const [debouncedSearchText, setDebouncedSearchText] = useState<string>("");
   const [searchResults, setSearchResults] = useState<ReactIconType[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   const [gridDropdown, setGridDropdown] = useState<string>();
   const [category, setCategory] = useState<Category>();
@@ -36,20 +41,53 @@ export default function Command() {
   const [refresh, setRefresh] = useState(false);
   const refreshIcons = () => setRefresh(!refresh);
 
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounce search text for "all" category to prevent excessive network requests
+  const handleSearchTextChange = useCallback(
+    (text: string) => {
+      setSearchText(text);
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      if (gridDropdown === "all") {
+        setIsSearching(true);
+        debounceTimerRef.current = setTimeout(() => {
+          setDebouncedSearchText(text);
+          setIsSearching(false);
+        }, SEARCH_DEBOUNCE_MS);
+      } else {
+        setDebouncedSearchText(text);
+      }
+    },
+    [gridDropdown],
+  );
+
   useEffect(() => {
     if (gridDropdown) {
       if (gridDropdown === "all") {
         setPinnedIcons([]);
         setRecentIcons([]);
         setCategory({ id: "all", title: "All Categories", icons: [] });
-        setSearchResults(searchIcons(searchText));
       } else {
         setPinnedIcons(getPinnedIcons(gridDropdown));
         setRecentIcons(getRecentIcons(gridDropdown));
         setCategory(loadCategoryIcons(gridDropdown));
       }
     }
-  }, [refresh, gridDropdown, searchText]);
+  }, [refresh, gridDropdown]);
+
+  // Perform search only when debounced text changes
+  useEffect(() => {
+    if (gridDropdown === "all" && debouncedSearchText.length >= 2) {
+      const results = searchIcons(debouncedSearchText, MAX_SEARCH_RESULTS);
+      setSearchResults(results);
+    } else if (gridDropdown === "all") {
+      setSearchResults([]);
+    }
+  }, [debouncedSearchText, gridDropdown]);
 
   if (!existsSync(downloadDirectory)) {
     const markdown = "Download directory is incorrect. Please update it in extension preferences and try again.";
@@ -68,10 +106,10 @@ export default function Command() {
 
   return (
     <Grid
-      isLoading={category === undefined}
+      isLoading={category === undefined || isSearching}
       columns={parseInt(size)}
       inset={Grid.Inset.Medium}
-      onSearchTextChange={setSearchText}
+      onSearchTextChange={handleSearchTextChange}
       searchBarPlaceholder={"Search for React Icons"}
       filtering={category?.id === "all" ? false : { keepSectionOrder: true }}
       searchBarAccessory={
@@ -94,7 +132,17 @@ export default function Command() {
         <React.Fragment>
           {category.id === "all" ? (
             searchResults.length === 0 ? (
-              <Grid.EmptyView title={"Search for All React Icons"} icon={{ source: "../assets/react-icons.svg" }} />
+              <Grid.EmptyView
+                title={
+                  searchText.length < 2
+                    ? "Type to Search All React Icons"
+                    : isSearching
+                      ? "Searching..."
+                      : "No Icons Found"
+                }
+                description={searchText.length < 2 ? "Enter at least 2 characters to search" : undefined}
+                icon={{ source: "../assets/react-icons.svg" }}
+              />
             ) : (
               searchResults.map((reactIcon: ReactIconType, index: number) => (
                 <ReactIconItem

@@ -27,20 +27,26 @@ export const formatCategoryTitle = (title: string): string => {
   return title.includes("Icons") ? title : `${title} Icons`;
 };
 
-export const searchIcons = (searchText: string): ReactIconType[] => {
+export const searchIcons = (searchText: string, limit?: number): ReactIconType[] => {
   if (searchText.length >= 2) {
     searchText = searchText.replaceAll(" ", "").toLowerCase();
     const results: ReactIconType[] = [];
-    categories.forEach((category) => {
-      category = loadCategoryIcons(category.title);
-      const id = category.id;
-      const title = category.title;
-      category.icons?.forEach((icon) => {
+    const maxResults = limit ?? Infinity;
+
+    for (const cat of categories) {
+      if (results.length >= maxResults) break;
+
+      const loadedCategory = loadCategoryIcons(cat.title);
+      const id = loadedCategory.id;
+      const title = loadedCategory.title;
+
+      for (const icon of loadedCategory.icons ?? []) {
         if (icon.toLowerCase().includes(searchText)) {
           results.push({ icon, category: { id, title } });
+          if (results.length >= maxResults) break;
         }
-      });
-    });
+      }
+    }
     return results;
   }
   return [];
