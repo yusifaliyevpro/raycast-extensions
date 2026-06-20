@@ -1,4 +1,4 @@
-import { getPreferenceValues, LocalStorage } from "@raycast/api";
+import { environment, getPreferenceValues, LocalStorage } from "@raycast/api";
 import {
   commonHeaders,
   JWT_TOKEN_STORAGE_KEY,
@@ -7,7 +7,7 @@ import {
   LAST_LMS_LOGIN_TIMESTAMP_KEY,
   ONE_HOUR_IN_MS,
 } from "./constants";
-import { fetchWithCookies } from "./utils";
+import { fetchWithCookies, green } from "./utils";
 
 type SSOUrl = { status: "old" } | { status: "new"; loginLink: string } | undefined;
 export async function getSSOUrl({ retryCount = 0 }: { retryCount?: number }): Promise<SSOUrl> {
@@ -89,7 +89,7 @@ export async function getJWTToken(): Promise<string> {
   }
 
   const newToken = await generateJWTToken();
-
+  if (environment.isDevelopment) console.log(green("GET JWT Token -> 200"));
   if (newToken) {
     const now = Date.now();
     await Promise.all([

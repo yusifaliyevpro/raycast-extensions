@@ -1,13 +1,9 @@
-import { Action, ActionPanel, getPreferenceValues, Icon, List, showToast, Toast } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
+import { Action, ActionPanel, getPreferenceValues, Icon, Keyboard, List, showToast, Toast } from "@raycast/api";
+import { useLocalStorage } from "@raycast/utils";
 import { getMaterialById, getMaterialDocumentById, getMaterials } from "@/data/lecture/materials";
-import { useState } from "react";
+import { useLmsQuery } from "@/lib/use-lms-query";
 import * as fs from "fs";
 import * as path from "path";
-
-type Preferences = {
-  downloadPath: string;
-};
 
 type DownloadedMaterial = {
   materialId: string;
@@ -15,13 +11,13 @@ type DownloadedMaterial = {
 };
 
 export function Materials({ lectureId }: { lectureId: string }) {
-  const [downloadedMaterials, setDownloadedMaterials] = useState<DownloadedMaterial[]>([]);
+  const { data: materials, isLoading, revalidate } = useLmsQuery(getMaterials, [lectureId]);
 
-  const { data: materials, isLoading } = useCachedPromise(getMaterials, [lectureId], {
-    onError: async () => {
-      await showToast({ style: Toast.Style.Failure, title: "Failed to load materials" });
-    },
-  });
+  // Persist downloaded files per lecture so "Open File" survives reopening the command.
+  const { value: downloadedMaterials = [], setValue: setDownloadedMaterials } = useLocalStorage<DownloadedMaterial[]>(
+    `downloaded-materials-${lectureId}`,
+    [],
+  );
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -54,12 +50,9 @@ export function Materials({ lectureId }: { lectureId: string }) {
         return;
       }
 
-      const preferences = getPreferenceValues<Preferences>();
-      const downloadPath = preferences.downloadPath;
+      const { downloadPath } = getPreferenceValues<Preferences>();
 
-      if (!downloadPath) {
-        throw new Error("Download path not configured");
-      }
+      if (!downloadPath) throw new Error("Download path not configured");
 
       if (!fs.existsSync(downloadPath)) {
         fs.mkdirSync(downloadPath, { recursive: true });
@@ -67,18 +60,21 @@ export function Materials({ lectureId }: { lectureId: string }) {
 
       toast.message = `Downloading ${files.length} file${files.length > 1 ? "s" : ""}...`;
 
+      const newEntries: DownloadedMaterial[] = [];
       for (const file of files) {
         const fileData = await getMaterialDocumentById(file.url);
 
-        if (!fileData) {
-          throw new Error(`Failed to download ${file.name}`);
-        }
+        if (!fileData) throw new Error(`Failed to download ${file.name}`);
 
         const filePath = path.join(downloadPath, file.name);
-        const buffer = Buffer.from(fileData);
-        fs.writeFileSync(filePath, buffer);
-        setDownloadedMaterials((prev) => [...prev, { materialId, filePath }]);
+        fs.writeFileSync(filePath, Buffer.from(fileData));
+        newEntries.push({ materialId, filePath });
       }
+
+      await setDownloadedMaterials([
+        ...downloadedMaterials.filter((dm) => dm.materialId !== materialId),
+        ...newEntries,
+      ]);
 
       toast.style = Toast.Style.Success;
       toast.title = "Downloaded Successfully";
@@ -91,13 +87,13 @@ export function Materials({ lectureId }: { lectureId: string }) {
     }
   };
 
-  const getDownloadedMaterial = (materialId: string): DownloadedMaterial | undefined => {
-    return downloadedMaterials.find((dm) => dm.materialId === materialId);
-  };
+  // Only treat a material as downloaded if the file is still on disk.
+  const getDownloadedMaterial = (materialId: string): DownloadedMaterial | undefined =>
+    downloadedMaterials.find((dm) => dm.materialId === materialId && fs.existsSync(dm.filePath));
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search materials..." navigationTitle="Materials">
-      {materials?.reverse().map((material) => {
+      {[...(materials ?? [])].reverse().map((material) => {
         const downloaded = getDownloadedMaterial(material.id);
         return (
           <List.Item
@@ -119,7 +115,7 @@ export function Materials({ lectureId }: { lectureId: string }) {
                       title="Download Again"
                       icon={Icon.Download}
                       onAction={() => handleDownloadMaterial(material.id, material.title)}
-                      shortcut={{ macOS: { modifiers: ["cmd"], key: "d" }, Windows: { modifiers: ["ctrl"], key: "d" } }}
+                      shortcut={{ modifiers: ["cmd"], key: "d" }}
                     />
                   </>
                 ) : (
@@ -129,6 +125,12 @@ export function Materials({ lectureId }: { lectureId: string }) {
                     onAction={() => handleDownloadMaterial(material.id, material.title)}
                   />
                 )}
+                <Action
+                  title="Refresh"
+                  icon={Icon.ArrowClockwise}
+                  onAction={revalidate}
+                  shortcut={Keyboard.Shortcut.Common.Refresh}
+                />
               </ActionPanel>
             }
           />

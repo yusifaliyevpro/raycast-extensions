@@ -1,11 +1,10 @@
 import { List, Icon, Color, ActionPanel, Action } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
 import { getLectureAttendance, getLectureAttendanceDetails } from "@/data/lecture/attendance";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
 export function Attendance({ lectureId }: { lectureId: string }) {
-  const { data: summary, isLoading: summaryLoading } = useCachedPromise(getLectureAttendance, [lectureId]);
-
-  const { data: details, isLoading: detailsLoading } = useCachedPromise(getLectureAttendanceDetails, [lectureId]);
+  const { data: summary, isLoading: summaryLoading } = useLmsQuery(getLectureAttendance, [lectureId]);
+  const { data: details, isLoading: detailsLoading } = useLmsQuery(getLectureAttendanceDetails, [lectureId]);
 
   const isLoading = summaryLoading || detailsLoading;
   const student = details?.students?.[0];
@@ -228,7 +227,7 @@ export function Attendance({ lectureId }: { lectureId: string }) {
                     tintColor: getMethodColor(dateInfo?.method || null),
                   }}
                   accessories={[
-                    dateInfo.date ? { text: dateInfo.mod_date, icon: Icon.Pencil } : {},
+                    dateInfo?.mod_date ? { text: dateInfo.mod_date, icon: Icon.Pencil } : {},
                     {
                       icon: {
                         source: getStatusIcon(status),

@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type Schedule = {
   status: "success" | "error";
@@ -19,12 +19,4 @@ export type Schedule = {
   >;
 };
 
-export async function getSchedule() {
-  const response = await authedFetch("schedule", { method: "GET" });
-
-  const data = (await response.json()) as Schedule;
-
-  if (data.status === "error") return null;
-
-  return data;
-}
+export const getSchedule = () => apiGet<Schedule | null>("/schedule", (d) => (d?.status === "error" ? null : d));

@@ -1,13 +1,9 @@
-import { Action, ActionPanel, Detail, showToast, Toast } from "@raycast/api";
-import { useCachedPromise } from "@raycast/utils";
+import { Action, ActionPanel, Detail } from "@raycast/api";
 import { getSyllabus } from "@/data/lecture/about";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
 export function About({ lectureId }: { lectureId: string }) {
-  const { data: syllabus, isLoading } = useCachedPromise(getSyllabus, [lectureId], {
-    onError: async () => {
-      await showToast({ style: Toast.Style.Failure, title: "Failed to load syllabus" });
-    },
-  });
+  const { data: syllabus, isLoading } = useLmsQuery(getSyllabus, [lectureId]);
 
   const data = syllabus?.[0];
   const plan = data?.lecture_plan?.[0];
@@ -74,17 +70,19 @@ export function About({ lectureId }: { lectureId: string }) {
     return markdown;
   };
 
-  const markdown = createMarkdown();
+  const markdown = data ? createMarkdown() : "";
 
   return (
     <Detail
-      isLoading={isLoading || !syllabus}
+      isLoading={isLoading}
       markdown={markdown}
       navigationTitle="About"
       actions={
-        <ActionPanel>
-          <Action.CopyToClipboard title="Copy as Markdown" content={markdown} />
-        </ActionPanel>
+        data && (
+          <ActionPanel>
+            <Action.CopyToClipboard title="Copy as Markdown" content={markdown} />
+          </ActionPanel>
+        )
       }
     />
   );

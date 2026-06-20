@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { getSchedule, Schedule } from "./data/schedule";
-import { Action, ActionPanel, Color, Icon, List, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Color, Icon, Keyboard, List } from "@raycast/api";
 import { getWeek } from "date-fns";
-import { useCachedPromise } from "@raycast/utils";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
 const WEEK_DAYS_AZ = ["Bazar", "Bazar ertəsi", "Çərşənbə axşamı", "Çərşənbə", "Cümə axşamı", "Cümə", "Şənbə"];
 
@@ -28,12 +28,7 @@ type WeekFilter = "current" | "upper" | "lower";
 export default function Command() {
   const [weekFilter, setWeekFilter] = useState<WeekFilter>("current");
 
-  const { isLoading, data: schedule } = useCachedPromise(getSchedule, [], {
-    initialData: null,
-    onError: async () => {
-      await showToast({ style: Toast.Style.Failure, title: "Failed to fetch schedule" });
-    },
-  });
+  const { isLoading, data: schedule, revalidate } = useLmsQuery(getSchedule, []);
 
   const isCurrentWeekUpper = getWeek(new Date(), { weekStartsOn: 1 }) % 2 === 0;
   const currentWeekType = isCurrentWeekUpper ? "upper" : "lower";
@@ -91,7 +86,7 @@ export default function Command() {
                 : cls.lecture_type_name;
         scheduleText += `📅 **${cls.time}** | ${cls.subject} (${lecture_type})`;
         scheduleText += ` | ${cls.teacher}`;
-        scheduleText += ` | ${cls.room || "000-0"}\n`;
+        scheduleText += ` | ${cls.room || "TBA"}\n`;
         if (index < filteredClasses.length - 1) scheduleText += "\n";
       });
 
@@ -135,7 +130,7 @@ export default function Command() {
               {filteredClasses.map((cls, index) => (
                 <List.Item
                   key={`${dayAz}-${index}`}
-                  title={cls.subject.slice(0, 35) + (cls.subject.length > 35 ? "..." : "")}
+                  title={cls.subject}
                   subtitle={`${cls.time} • ${cls.teacher}`}
                   icon={{
                     source: Icon.Book,
@@ -173,6 +168,12 @@ export default function Command() {
                         title="Copy Full Schedule as Markdown"
                         content={createFullScheduleMarkdown()}
                         icon={Icon.Clipboard}
+                      />
+                      <Action
+                        title="Refresh"
+                        icon={Icon.ArrowClockwise}
+                        onAction={revalidate}
+                        shortcut={Keyboard.Shortcut.Common.Refresh}
                       />
                     </ActionPanel>
                   }

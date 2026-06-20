@@ -1,22 +1,22 @@
-import { Action, ActionPanel, List, Toast, showToast, Icon, Color } from "@raycast/api";
+import { Action, ActionPanel, List, Icon, Color, Keyboard } from "@raycast/api";
 import { getProfileInfo } from "./data/profile-info";
-import { useCachedPromise, usePromise } from "@raycast/utils";
 import { getExamPassword } from "./data/exam-password";
+import { useLmsQuery } from "@/lib/use-lms-query";
 import { LMS_BASE_URL } from "./lib/constants";
 
 export default function Command() {
-  const { isLoading, data: profile } = useCachedPromise(getProfileInfo, [], {
-    initialData: null,
-    onError: async () => {
-      await showToast(Toast.Style.Failure, "Failed to fetch Profile Info");
-    },
-  });
+  const { isLoading, data: profile, revalidate } = useLmsQuery(getProfileInfo, []);
 
-  const { isLoading: isExamPasswordLoading, data: examPassword } = usePromise(getExamPassword, [], {
-    onError: async () => {
-      await showToast(Toast.Style.Failure, "Failed to fetch Exam Password");
-    },
-  });
+  const {
+    isLoading: isExamPasswordLoading,
+    data: examPassword,
+    revalidate: revalidateExamPassword,
+  } = useLmsQuery(getExamPassword, []);
+
+  const refresh = () => {
+    revalidate();
+    revalidateExamPassword();
+  };
 
   const basic = profile?.basicInfo;
   const academic = profile?.academicInfo;
@@ -56,6 +56,12 @@ export default function Command() {
                     title="Copy Student ID"
                     content={basic?.userId || ""}
                     icon={Icon.CopyClipboard}
+                  />
+                  <Action
+                    title="Refresh"
+                    icon={Icon.ArrowClockwise}
+                    onAction={refresh}
+                    shortcut={Keyboard.Shortcut.Common.Refresh}
                   />
                 </ActionPanel>
               }

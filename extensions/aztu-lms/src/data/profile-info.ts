@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type ProfileInfo = {
   basicInfo: {
@@ -22,12 +22,4 @@ export type ProfileInfo = {
   };
 };
 
-export async function getProfileInfo() {
-  const response = await authedFetch("profile", { method: "GET" });
-
-  const data = (await response.json()) as ProfileInfo;
-
-  if (!data.basicInfo) return null;
-
-  return data;
-}
+export const getProfileInfo = () => apiGet<ProfileInfo | null>("/profile", (d) => (d?.basicInfo ? d : null));

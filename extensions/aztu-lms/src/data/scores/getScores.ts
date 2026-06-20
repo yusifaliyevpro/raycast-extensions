@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type TotalScore = {
   results: {
@@ -25,12 +25,4 @@ export type TotalScore = {
   };
 };
 
-export async function getTotalScores() {
-  const response = await authedFetch("scores", { method: "GET", body: null });
-
-  const data = (await response.json()) as TotalScore;
-
-  if (!data.results) return null;
-
-  return data;
-}
+export const getTotalScores = () => apiGet<TotalScore | null>("/scores", (d) => (d?.results ? d : null));

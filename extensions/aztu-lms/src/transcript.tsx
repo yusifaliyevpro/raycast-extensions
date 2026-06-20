@@ -1,15 +1,10 @@
-import { List, ActionPanel, Action, showToast, Toast, Icon } from "@raycast/api";
+import { List, ActionPanel, Action, Icon, Keyboard } from "@raycast/api";
 import { getTotalScores } from "./data/scores/getScores";
 import SemesterDetail from "./components/semester-details";
-import { useCachedPromise } from "@raycast/utils";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
 export default function Command() {
-  const { isLoading, data: totalScores } = useCachedPromise(getTotalScores, [], {
-    initialData: null,
-    onError: async () => {
-      await showToast({ style: Toast.Style.Failure, title: "Failed to fetch semester scores" });
-    },
-  });
+  const { isLoading, data: totalScores, revalidate } = useLmsQuery(getTotalScores, []);
 
   return (
     <List isLoading={isLoading} searchBarPlaceholder="Search semesters...">
@@ -28,6 +23,12 @@ export default function Command() {
           actions={
             <ActionPanel>
               <Action.Push title="View Semester Details" target={<SemesterDetail semCode={semester.sem_code} />} />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={revalidate}
+                shortcut={Keyboard.Shortcut.Common.Refresh}
+              />
             </ActionPanel>
           }
         />

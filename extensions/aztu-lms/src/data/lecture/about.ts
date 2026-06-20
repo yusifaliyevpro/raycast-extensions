@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type Syllabus = {
   id: string;
@@ -30,23 +30,5 @@ export type Syllabus = {
   }[];
 }[];
 
-export async function getSyllabus(lectureId: string) {
-  try {
-    const res = await authedFetch(`lectures/${lectureId}/syllabus`, {
-      method: "GET",
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch syllabus");
-    }
-
-    const data = (await res.json()) as Syllabus;
-    if (!Array.isArray(data)) return null;
-
-    console.log("get Syllabus");
-    return data;
-  } catch (error) {
-    console.log("Error fetching syllabus:", error);
-    return null;
-  }
-}
+export const getSyllabus = (lectureId: string) =>
+  apiGet<Syllabus | null>(`/lectures/${lectureId}/syllabus`, (d) => (Array.isArray(d) ? d : null));

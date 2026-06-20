@@ -65,6 +65,126 @@
       "mode": "view"
     }
   ],
+  "tools": [
+    {
+      "name": "get-lectures",
+      "title": "Get Lectures",
+      "description": "Get the student's active lectures this semester (with the ids other tools need)"
+    },
+    {
+      "name": "get-schedule",
+      "title": "Get Schedule",
+      "description": "Get the student's weekly class schedule grouped by weekday"
+    },
+    {
+      "name": "get-attendance",
+      "title": "Get Attendance",
+      "description": "Get the overall attendance summary (percentage and score) across all lectures"
+    },
+    {
+      "name": "get-lecture-attendance",
+      "title": "Get Lecture Attendance",
+      "description": "Get the week-by-week attendance detail for one lecture"
+    },
+    {
+      "name": "get-announcements",
+      "title": "Get Announcements",
+      "description": "List LMS announcements (title, author, date)"
+    },
+    {
+      "name": "get-announcement-content",
+      "title": "Get Announcement Content",
+      "description": "Read the full body of a single announcement by id"
+    },
+    {
+      "name": "get-profile",
+      "title": "Get Profile",
+      "description": "Get the student's profile and academic information"
+    },
+    {
+      "name": "get-exam-password",
+      "title": "Get Exam Password",
+      "description": "Get the student's current test-exam password"
+    },
+    {
+      "name": "get-transcript",
+      "title": "Get Transcript",
+      "description": "Get the per-semester transcript summary and overall GPA"
+    },
+    {
+      "name": "get-semester-scores",
+      "title": "Get Semester Scores",
+      "description": "Get the per-subject grades for one semester by its sem_code"
+    },
+    {
+      "name": "get-lecture-materials",
+      "title": "Get Lecture Materials",
+      "description": "List the materials uploaded for one lecture"
+    },
+    {
+      "name": "get-material",
+      "title": "Get Material",
+      "description": "Read the full content of a single lecture material"
+    },
+    {
+      "name": "get-lecture-syllabus",
+      "title": "Get Lecture Syllabus",
+      "description": "Get a lecture's syllabus, professors, and assessment breakdown"
+    }
+  ],
+  "ai": {
+    "instructions": "This extension reads the currently logged-in student's AzTU (Azerbaijan Technical University) LMS account. Every tool is read-only and always acts on that student. Discover ids by chaining tools: get a lecture's `id` from `get-lectures` before calling any lecture-specific tool (materials, syllabus, attendance); get a semester's `sem_code` from `get-transcript` before calling `get-semester-scores`; get an announcement or material `id` from its list tool before reading its content. Subject, teacher, and weekday names are often in Azerbaijani. Attendance scores are out of 10. In `get-schedule`, the week type is `Daimi` (every week), `Üst həftə` (upper week), or `Alt həftə` (lower week); combine it with today's date to answer questions about 'today' or 'this week'.",
+    "evals": [
+      {
+        "input": "@aztu-lms what lectures do I have this semester?",
+        "mocks": {
+          "get-lectures": [
+            { "id": "101", "class_num": "1", "lecture_name": "Riyazi analiz" },
+            { "id": "102", "class_num": "2", "lecture_name": "Proqramlaşdırma" }
+          ]
+        },
+        "expected": [{ "callsTool": "get-lectures" }]
+      },
+      {
+        "input": "@aztu-lms how is my attendance looking?",
+        "mocks": {
+          "get-attendance": [
+            {
+              "lecture_id": "101",
+              "lecture_name": "Riyazi analiz",
+              "total_weeks": 15,
+              "attended_weeks": 14,
+              "absent_weeks": 1,
+              "attendance_percent": "93%",
+              "attendance_score": 9
+            }
+          ]
+        },
+        "expected": [{ "callsTool": "get-attendance" }]
+      },
+      {
+        "input": "@aztu-lms what is my test exam password?",
+        "mocks": { "get-exam-password": { "success": true, "data": 482913 } },
+        "expected": [{ "callsTool": "get-exam-password" }, { "includes": "482913" }]
+      },
+      {
+        "input": "@aztu-lms show me the materials for Proqramlaşdırma",
+        "mocks": {
+          "get-lectures": [
+            { "id": "101", "class_num": "1", "lecture_name": "Riyazi analiz" },
+            { "id": "102", "class_num": "2", "lecture_name": "Proqramlaşdırma" }
+          ],
+          "get-lecture-materials": [
+            { "id": "55", "title": "Həftə 1 - Giriş", "creator": "Dr. Əliyev", "created_at": "2026-02-10" }
+          ]
+        },
+        "expected": [
+          { "callsTool": "get-lectures" },
+          { "callsTool": { "name": "get-lecture-materials", "arguments": { "lectureId": "102" } } }
+        ]
+      }
+    ]
+  },
   "preferences": [
     {
       "name": "userid",
@@ -90,18 +210,18 @@
     }
   ],
   "dependencies": {
-    "@raycast/api": "^1.104.18",
-    "@raycast/utils": "^2.2.5",
-    "date-fns": "^4.2.1",
+    "@raycast/api": "^1.104.19",
+    "@raycast/utils": "^2.2.6",
+    "date-fns": "^4.4.0",
     "fetch-cookie": "3.2.0",
     "tough-cookie": "^6.0.1"
   },
   "devDependencies": {
     "@raycast/eslint-config": "2.1.1",
     "@types/node": "^24.12.4",
-    "@types/react": "^19.2.15",
+    "@types/react": "^19.2.17",
     "eslint": "^9.39.4",
-    "prettier": "^3.8.3",
+    "prettier": "^3.8.4",
     "typescript": "^5.9.3"
   },
   "scripts": {
@@ -110,5 +230,8 @@
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
     "publish": "npx @raycast/api@latest publish"
+  },
+  "allowScripts": {
+    "esbuild@0.27.7": true
   }
 }

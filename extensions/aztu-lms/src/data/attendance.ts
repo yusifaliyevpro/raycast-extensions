@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type Attendance = {
   lecture_id: string;
@@ -10,11 +10,4 @@ export type Attendance = {
   attendance_score: number;
 };
 
-export async function getAttendance() {
-  const response = await authedFetch("attendance", { method: "GET" });
-  const data = (await response.json()) as Attendance[];
-
-  if (!(data instanceof Array)) return null;
-
-  return data;
-}
+export const getAttendance = () => apiGet<Attendance[] | null>("/attendance", (d) => (Array.isArray(d) ? d : null));

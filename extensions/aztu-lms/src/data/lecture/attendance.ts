@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type LectureAttendance = {
   id: string;
@@ -15,20 +15,8 @@ export type LectureAttendance = {
   hours: string;
 };
 
-export async function getLectureAttendance(id: string) {
-  const res = await authedFetch(`lectures/${id}/attendance`, {
-    method: "GET",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch lecture attendance");
-  }
-
-  const data = (await res.json()) as LectureAttendance;
-  if (!data) return null;
-
-  return data;
-}
+export const getLectureAttendance = (id: string) =>
+  apiGet<LectureAttendance | null>(`/lectures/${id}/attendance`, (d) => d ?? null);
 
 export type AttendanceDetails = {
   success: boolean;
@@ -55,17 +43,5 @@ export type AttendanceDetails = {
   }[];
 };
 
-export async function getLectureAttendanceDetails(id: string) {
-  const res = await authedFetch(`lectures/${id}/attendance-detail`, {
-    method: "GET",
-  });
-
-  if (!res.ok) {
-    throw new Error("Failed to fetch lecture attendance details");
-  }
-
-  const data = (await res.json()) as AttendanceDetails;
-  if (!data) return null;
-
-  return data;
-}
+export const getLectureAttendanceDetails = (id: string) =>
+  apiGet<AttendanceDetails | null>(`/lectures/${id}/attendance-detail`, (d) => d ?? null);

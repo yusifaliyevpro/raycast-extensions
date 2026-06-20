@@ -1,14 +1,9 @@
-import { Action, ActionPanel, Detail, showToast, Toast } from "@raycast/api";
+import { Action, ActionPanel, Detail } from "@raycast/api";
 import { getSemesterScores, SemesterScores } from "@/data/scores/getSemesterScores";
-import { useCachedPromise } from "@raycast/utils";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
 export default function SemesterDetail({ semCode }: { semCode: string }) {
-  const { isLoading, data: rows } = useCachedPromise(getSemesterScores, [semCode], {
-    initialData: null,
-    onError: async () => {
-      await showToast(Toast.Style.Failure, "Failed to load semester details");
-    },
-  });
+  const { isLoading, data: rows } = useLmsQuery(getSemesterScores, [semCode]);
 
   const semesterName = rows?.results[0]?.semester_name || "Semester";
 

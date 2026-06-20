@@ -1,4 +1,4 @@
-import { authedFetch } from "@/lib/auth";
+import { apiGet } from "@/lib/client";
 
 export type Lecture = {
   id: string;
@@ -6,21 +6,4 @@ export type Lecture = {
   lecture_name: string;
 };
 
-export async function getLectures() {
-  try {
-    const res = await authedFetch("lectures", {
-      method: "GET",
-    });
-
-    if (!res.ok) {
-      throw new Error("Failed to fetch lectures");
-    }
-    const data = (await res.json()) as Lecture[];
-    if (!Array.isArray(data)) return null;
-
-    return data;
-  } catch (error) {
-    console.error("Error fetching lectures:", error);
-    return null;
-  }
-}
+export const getLectures = () => apiGet<Lecture[] | null>("/lectures", (d) => (Array.isArray(d) ? d : null));

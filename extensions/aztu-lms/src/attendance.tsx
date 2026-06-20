@@ -1,9 +1,9 @@
-import { List, showToast, Toast, Color, Icon, Action, ActionPanel } from "@raycast/api";
+import { List, Color, Icon, Action, ActionPanel, Keyboard } from "@raycast/api";
 import { getAttendance } from "./data/attendance";
 import { Attendance } from "./components/lecture/attendance";
-import { usePromise } from "@raycast/utils";
+import { useLmsQuery } from "@/lib/use-lms-query";
 
-export const getStatusText = (percent: string): string => {
+const getStatusText = (percent: string): string => {
   const numericPercent = parseInt(percent.replace("%", ""));
   if (numericPercent >= 85) return "Excellent";
   if (numericPercent >= 75) return "Good";
@@ -11,11 +11,7 @@ export const getStatusText = (percent: string): string => {
 };
 
 export default function Command() {
-  const { isLoading, data: attendance } = usePromise(getAttendance, [], {
-    onError: async () => {
-      await showToast(Toast.Style.Failure, "Failed to fetch attendance");
-    },
-  });
+  const { isLoading, data: attendance, revalidate } = useLmsQuery(getAttendance, []);
 
   const getAttendanceColor = (percent: string): Color => {
     const numericPercent = parseInt(percent.replace("%", ""));
@@ -61,6 +57,12 @@ export default function Command() {
                 title="View Details"
                 target={<Attendance lectureId={lecture.lecture_id} />}
                 icon={Icon.Eye}
+              />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                onAction={revalidate}
+                shortcut={Keyboard.Shortcut.Common.Refresh}
               />
             </ActionPanel>
           }

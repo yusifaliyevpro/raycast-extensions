@@ -7,7 +7,7 @@ export async function authedFetch(url: string, options: RequestInit = {}) {
 
   const headers = { Authorization: `Bearer ${token}`, ...commonHeaders, ...(options.headers || {}) };
 
-  const response = await fetchWithCookies(`https://api-lms.aztu.edu.az/api/${url}`, {
+  const response = await fetchWithCookies(`https://api-lms.aztu.edu.az/api${url}`, {
     ...options,
     headers,
   });
